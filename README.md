@@ -145,6 +145,16 @@ To use this build in your editor, configure its LSP client to run:
 node /absolute/path/to/ts-css-modules-lsp/dist/cli.js --stdio
 ```
 
+## Tests
+
+From a checkout with dependencies installed (`npm ci`), run:
+
+```sh
+npm test
+```
+
+This builds the server and runs unit and integration tests with Node.js's built-in test runner. No editor or running language server is required. Tests use real Sass/PostCSS compilation and isolated temporary files; cache race tests use controlled promises rather than timing delays.
+
 ## Built on and inspired by
 
 - [vtsls](https://github.com/yioneko/vtsls) — TypeScript language server backend.

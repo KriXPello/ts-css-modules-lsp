@@ -21,7 +21,10 @@ async function fileState(filePath: string): Promise<FileState> {
 export class StyleCache {
   private readonly entries = new Map<string, Promise<CacheEntry>>();
 
-  constructor(private readonly options: StyleOptions) {}
+  constructor(
+    private readonly options: StyleOptions,
+    private readonly analyze: typeof analyzeStyles = analyzeStyles,
+  ) {}
 
   async get(filePath: string): Promise<StyleAnalysis> {
     while (true) {
@@ -73,7 +76,7 @@ export class StyleCache {
 
   private async compile(filePath: string): Promise<CacheEntry> {
     const started = Date.now();
-    const analysis = await analyzeStyles(filePath, this.options);
+    const analysis = await this.analyze(filePath, this.options);
     const files = new Map(
       await Promise.all(
         [...analysis.dependencies].map(async (dependency) =>
