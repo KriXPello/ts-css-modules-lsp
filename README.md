@@ -20,14 +20,14 @@ Use it **instead of your existing TypeScript language server**. vtsls is include
 
 ### Example: Zed
 
-Override `vtsls` in Zed's **user settings**:
+Override `vtsls` in Zed's **user settings**. Set `binary.path` to the **absolute path to `npx`**, replacing the Unix-style example path below with your own:
 
 ```json
 {
   "lsp": {
     "vtsls": {
       "binary": {
-        "path": "npx",
+        "path": "/usr/bin/npx",
         "arguments": ["--yes", "ts-css-modules-lsp", "--stdio"]
       }
     }
@@ -37,7 +37,7 @@ Override `vtsls` in Zed's **user settings**:
 
 Keep the key as `vtsls` to preserve your existing settings, then restart the language server. Your CSS/SCSS language server can remain enabled.
 
-If Zed cannot find `npx`, set `binary.path` to its absolute path.
+To find the path, run `command -v npx` on macOS/Linux or `where.exe npx` on Windows. On Windows, use the absolute path to `npx.cmd` from the output.
 
 ## Usage
 

@@ -1,6 +1,6 @@
 {
   "name": "ts-css-modules-lsp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "files": [
     "dist",
