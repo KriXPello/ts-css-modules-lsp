@@ -48,6 +48,16 @@ export class Definitions {
 
     const filePath = resolveStyleModule(reference.moduleName, URI.parse(document.uri).fsPath, this.config);
     if (!filePath || token.isCancellationRequested) return null;
+    if (reference.kind === 'module') {
+      const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } };
+      return [{
+        originSelectionRange: reference.originRange,
+        targetUri: URI.file(filePath).toString(),
+        targetRange: range,
+        targetSelectionRange: range,
+      }];
+    }
+
     const analysis = await this.styles.get(filePath);
     if (token.isCancellationRequested) return null;
     const locations = analysis.exports.get(reference.exportName);
