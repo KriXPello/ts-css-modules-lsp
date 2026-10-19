@@ -3,11 +3,13 @@ import type { TextDocument } from 'vscode-languageserver-textdocument';
 import type { Position, Range } from 'vscode-languageserver-protocol';
 import { URI } from 'vscode-uri';
 
-export interface ModuleReference {
+export type ModuleReference = {
   moduleName: string;
-  exportName: string;
   originRange: Range;
-}
+} & (
+  | { kind: 'module' }
+  | { kind: 'export'; exportName: string }
+);
 
 interface CachedProgram {
   key: string;
@@ -89,7 +91,9 @@ export function getModuleReference(document: TextDocument, position: Position): 
   const offset = document.offsetAt(position);
   let target: ts.Node | undefined;
   const findTarget = (node: ts.Node): void => {
-    if (node.kind === ts.SyntaxKind.PropertyAccessExpression) {
+    if (ts.isImportClause(node) && node.name) {
+      if (offset >= node.name.getStart(sourceFile) && offset <= node.name.end) target = node.name;
+    } else if (node.kind === ts.SyntaxKind.PropertyAccessExpression) {
       const access = node as ts.PropertyAccessExpression;
       if (offset >= access.name.getStart(sourceFile) && offset <= access.name.end) target = access;
     } else if (node.kind === ts.SyntaxKind.ElementAccessExpression) {
@@ -103,7 +107,12 @@ export function getModuleReference(document: TextDocument, position: Position): 
   findTarget(sourceFile);
   if (!target) return null;
 
-  const receiver = (target as ts.PropertyAccessExpression | ts.ElementAccessExpression).expression;
+  let receiver: ts.Node;
+  if (ts.isIdentifier(target)) {
+    receiver = target;
+  } else {
+    receiver = (target as ts.PropertyAccessExpression | ts.ElementAccessExpression).expression;
+  }
   const receiverSymbol = checker.getSymbolAtLocation(receiver);
   if (!receiverSymbol) return null;
   const declaration = receiverSymbol.declarations?.find((item) =>
@@ -114,6 +123,18 @@ export function getModuleReference(document: TextDocument, position: Position): 
   if (!declaration || !ts.isImportClause(declaration) || !declaration.name) return null;
 
   const importDeclaration = declaration.parent as ts.ImportDeclaration;
+  if (!ts.isStringLiteral(importDeclaration.moduleSpecifier)) return null;
+  if (ts.isIdentifier(target)) {
+    return {
+      kind: 'module',
+      moduleName: importDeclaration.moduleSpecifier.text,
+      originRange: {
+        start: document.positionAt(target.getStart(sourceFile)),
+        end: document.positionAt(target.end),
+      },
+    };
+  }
+
   let originNode: ts.Node;
   let exportName: string;
   if (ts.isPropertyAccessExpression(target)) {
@@ -125,10 +146,10 @@ export function getModuleReference(document: TextDocument, position: Position): 
     originNode = argument;
     exportName = argument.text;
   }
-  if (!ts.isStringLiteral(importDeclaration.moduleSpecifier)) return null;
   const originStart = originNode.getStart(sourceFile);
   const originEnd = originNode.end;
   return {
+    kind: 'export',
     moduleName: importDeclaration.moduleSpecifier.text,
     exportName,
     originRange: {
